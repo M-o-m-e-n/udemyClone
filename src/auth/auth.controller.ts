@@ -6,7 +6,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AuthDto } from './dto/auth.dto';
+import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Public } from './common/decorators/public.decorator';
@@ -20,18 +20,18 @@ export class AuthController {
   @Public()
   @Post('signup')
   async signup(
-    @Body() authDto: AuthDto,
+    @Body() signUpDto: SignUpDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    return this.authService.signup(authDto);
+    return this.authService.signup(signUpDto);
   }
 
   @Public()
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  async signin(
-    @Body() authDto: AuthDto,
+  async signIn(
+    @Body() signInDto: SignInDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    return this.authService.signin(authDto);
+    return this.authService.signIn(signInDto);
   }
 
   @UseGuards(AuthGuard('access-token'))

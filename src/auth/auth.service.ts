@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { AuthDto } from './dto/auth.dto';
+import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from 'generated/prisma/runtime/library';
@@ -13,8 +13,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
-  async signup(authDto: AuthDto) {
-    const { email, password } = authDto;
+  async signup(signUpDto: SignUpDto) {
+    const { email, password, role } = signUpDto;
     try {
       const hashedPassword = await argon.hash(password);
 
@@ -22,10 +22,11 @@ export class AuthService {
         data: {
           email,
           password: hashedPassword,
+          userRole: role,
         },
       });
 
-      return this.getTokens(newUser.id, newUser.email);
+      return this.getTokens(newUser.id, newUser.email, newUser.userRole);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -35,8 +36,8 @@ export class AuthService {
       throw error;
     }
   }
-  async signin(authDto: AuthDto) {
-    const { email, password } = authDto;
+  async signIn(signInDto: SignInDto) {
+    const { email, password } = signInDto;
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -50,7 +51,7 @@ export class AuthService {
       throw new ForbiddenException('Invalid credentials');
     }
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.userRole);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
     return tokens;
   }
@@ -85,14 +86,14 @@ export class AuthService {
       throw new ForbiddenException('Invalid refresh token');
     }
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.userRole);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
     return tokens;
   }
 
-  async getTokens(userId: string, email: string) {
+  async getTokens(userId: string, email: string, role: string) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: userId, email },
+      { sub: userId, email, role },
       {
         secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
         expiresIn: '15m',
