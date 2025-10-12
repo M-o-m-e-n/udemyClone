@@ -14,21 +14,295 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  password     String
-  name         String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  refreshToken String?
-  userRole     Role     @default(STUDENT)
-
-  @@map("users")
-}
-
 enum Role {
   STUDENT
   INSTRUCTOR
   ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password      String
+  firstName     String
+  lastName      String
+  avatar        String?
+  bio           String?
+  role          Role       @default(STUDENT)
+  status        UserStatus @default(ACTIVE)
+  emailVerified Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  coursesCreated Course[]       @relation("InstructorCourses")
+  enrollments    Enrollment[]
+  reviews        Review[]
+  progress       Progress[]
+  certificates   Certificate[]
+  payments       Payment[]
+  refreshTokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Course {
+  id               String       @id @default(uuid())
+  title            String
+  slug             String       @unique
+  subtitle         String?
+  description      String
+  thumbnail        String?
+  promoVideo       String?
+  price            Float        @default(0)
+  discountedPrice  Float?
+  level            CourseLevel  @default(ALL_LEVELS)
+  language         String       @default("en")
+  status           CourseStatus @default(DRAFT)
+  instructorId     String
+  categoryId       String
+  totalDuration    Int          @default(0) // in seconds
+  totalLectures    Int          @default(0)
+  totalStudents    Int          @default(0)
+  averageRating    Float        @default(0)
+  totalReviews     Int          @default(0)
+  prerequisites    String[]
+  learningOutcomes String[] // what students will learn
+  targetAudience   String[] // who this course is for
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  publishedAt      DateTime?
+
+  instructor   User          @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  sections     Section[]
+  enrollments  Enrollment[]
+  reviews      Review[]
+  certificates Certificate[]
+  payments     Payment[]
+
+  @@index([instructorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+  @@map("courses")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses  Course[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Section {
+  id          String   @id @default(uuid())
+  courseId    String
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lectures Lecture[]
+
+  @@index([courseId])
+  @@index([order])
+  @@map("sections")
+}
+
+enum LectureType {
+  VIDEO
+  ARTICLE
+  QUIZ
+  RESOURCE
+}
+
+model Lecture {
+  id             String      @id @default(uuid())
+  sectionId      String
+  title          String
+  description    String?
+  type           LectureType @default(VIDEO)
+  duration       Int         @default(0) // in seconds
+  order          Int
+  isFree         Boolean     @default(false) // preview lecture
+  videoUrl       String?
+  hlsUrl         String? // HLS streaming URL
+  articleContent String?     @db.Text
+  resourceUrl    String? // downloadable resources
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  section  Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress Progress[]
+
+  @@index([sectionId])
+  @@index([order])
+  @@map("lectures")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  REFUNDED
+}
+
+model Enrollment {
+  id             String           @id @default(uuid())
+  userId         String
+  courseId       String
+  status         EnrollmentStatus @default(ACTIVE)
+  progress       Float            @default(0) // percentage 0-100
+  enrolledAt     DateTime         @default(now())
+  completedAt    DateTime?
+  lastAccessedAt DateTime?
+  expiresAt      DateTime? // for time-limited courses
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+model Progress {
+  id           String    @id @default(uuid())
+  userId       String
+  lectureId    String
+  completed    Boolean   @default(false)
+  watchedTime  Int       @default(0) // in seconds
+  lastPosition Int       @default(0) // video position in seconds
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lectureId])
+  @@index([userId])
+  @@index([lectureId])
+  @@map("progress")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  rating    Int // 1-5
+  title     String?
+  comment   String   @db.Text
+  helpful   Int      @default(0) // helpful count
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  userId          String
+  courseId        String
+  amount          Float
+  currency        String          @default("USD")
+  status          PaymentStatus   @default(PENDING)
+  provider        PaymentProvider
+  transactionId   String?         @unique // Stripe/PayPal transaction ID
+  paymentIntentId String?         @unique // Stripe payment intent
+  paymentMethodId String? // payment method used (credit card, debit card, etc.)
+  refundId        String? // for refunded payments
+  metadata        Json?           @db.JsonB // additional payment metadata
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+model Certificate {
+  id               String   @id @default(uuid())
+  userId           String
+  courseId         String
+  certificateUrl   String
+  issuedAt         DateTime @default(now())
+  verificationCode String   @unique
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([verificationCode])
+  @@map("certificates")
 }
