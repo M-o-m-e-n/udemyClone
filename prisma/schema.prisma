@@ -79,7 +79,7 @@ enum CourseStatus {
 model Course {
   id               String       @id @default(uuid())
   title            String
-  slug             String       @unique
+  slug             String       @unique  // for SEO-friendly URLs
   subtitle         String?
   description      String
   thumbnail        String?

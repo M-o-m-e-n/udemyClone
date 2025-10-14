@@ -1,24 +1,18 @@
-import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export const signUpDto = z.object({
-  email: z.email(),
-  password: z.string().min(1, 'Password must be at least 1 character long'), // Must be changed later
-  role: z.enum(['STUDENT', 'INSTRUCTOR', 'ADMIN']),
+export const signupDto = z.object({
+  email: z.email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters long'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  role: z.enum(['STUDENT', 'INSTRUCTOR']).optional().default('STUDENT'),
 });
 
-export const signInDto = z.object({
-  email: z.email(),
-  password: z.string().min(1, 'Password must be at least 1 character long'), // Must be changed later
+export const signinDto = z.object({
+  email: z.email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
 });
 
-export class SignUpDto extends createZodDto(signUpDto) {
-  email: string;
-  password: string;
-  role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
-}
-
-export class SignInDto extends createZodDto(signInDto) {
-  email: string;
-  password: string;
-}
+export class SignUpDto extends createZodDto(signupDto) {}
+export class SignInDto extends createZodDto(signinDto) {}
