@@ -1,26 +1,14 @@
-import {
-  createParamDecorator,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { JwtPayload, JwtPayloadWithRefreshToken } from '../../types/auth.types';
-
-interface RequestWithUser extends Request {
-  user: JwtPayload | JwtPayloadWithRefreshToken;
-}
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const GetCurrentUserId = createParamDecorator(
   (data: undefined, context: ExecutionContext): string => {
-    const request: RequestWithUser = context
-      .switchToHttp()
-      .getRequest<RequestWithUser>();
-    const user = request.user;
+    const request = context.switchToHttp().getRequest();
 
-    if (!user || !user.sub) {
-      throw new UnauthorizedException('User not authenticated');
-    }
+    console.log('=== GET CURRENT USER ID ===');
+    console.log('Request user:', request.user);
+    console.log('User ID:', request.user?.userId);
+    console.log('===========================');
 
-    return user.sub;
+    return request.user?.userId;
   },
 );

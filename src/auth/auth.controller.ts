@@ -6,49 +6,45 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { AuthService } from './auth.service';
-import { AuthGuard } from '@nestjs/passport';
+import { SignInDto, SignUpDto } from './dto/auth.dto';
 import { Public } from './common/decorators/public.decorator';
-import { GetCurrentUser } from './common/decorators/get-current-user.decorator';
+import { RefreshTokenGuard } from './common/guards/refresh-token.guard';
 import { GetCurrentUserId } from './common/decorators/get-current-user-id.decorator';
+import { GetCurrentUser } from './common/decorators/get-current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private authService: AuthService) {}
 
   @Public()
   @Post('signup')
-  async signup(
-    @Body() signUpDto: SignUpDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    return this.authService.signup(signUpDto);
+  @HttpCode(HttpStatus.CREATED)
+  signUp(@Body() dto: SignUpDto) {
+    return this.authService.signup(dto);
   }
 
   @Public()
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  async signIn(
-    @Body() signInDto: SignInDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    return this.authService.signIn(signInDto);
-  }
-
-  @UseGuards(AuthGuard('access-token'))
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  async logout(@GetCurrentUserId() userId: string) {
-    return this.authService.logout(userId);
+  signIn(@Body() dto: SignInDto) {
+    return this.authService.signIn(dto);
   }
 
   @Public()
-  @UseGuards(AuthGuard('refresh-token'))
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(
+  refreshTokens(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ) {
     return this.authService.refreshTokens(userId, refreshToken);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@GetCurrentUserId() userId: string) {
+    return this.authService.logout(userId);
   }
 }

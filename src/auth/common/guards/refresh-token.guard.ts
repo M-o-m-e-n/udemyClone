@@ -1,7 +1,5 @@
+import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-export class RefreshTokenGuard extends AuthGuard('refresh-token') {
-  constructor() {
-    super();
-  }
-}
+@Injectable()
+export class RefreshTokenGuard extends AuthGuard('jwt-refresh') {}

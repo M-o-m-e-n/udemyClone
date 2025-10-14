@@ -1,39 +1,34 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
-import { JwtPayload, JwtPayloadWithRefreshToken } from '../types/auth.types';
+
+type JwtPayload = {
+  sub: string;
+  email: string;
+  role: string;
+};
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
   Strategy,
-  'refresh-token',
+  'jwt-refresh',
 ) {
-  constructor(private configService: ConfigService) {
-    const secret = configService.get<string>('REFRESH_TOKEN_SECRET');
-    if (!secret) {
-      throw new Error(
-        'REFRESH_TOKEN_SECRET is not defined in environment variables',
-      );
-    }
-
+  constructor(config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: secret,
+      secretOrKey: config.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
       passReqToCallback: true,
     });
   }
 
-  validate(req: Request, payload: JwtPayload): JwtPayloadWithRefreshToken {
-    const refreshToken = req.get('authorization')?.replace('Bearer', '').trim();
-
-    if (!refreshToken) {
-      throw new Error('Refresh token not found');
-    }
-
+  validate(req: Request, payload: JwtPayload) {
+    const refreshToken = req.get('Authorization')?.replace('Bearer', '').trim();
     return {
-      ...payload,
+      userId: payload.sub,
+      email: payload.email,
+      role: payload.role,
       refreshToken,
     };
   }
