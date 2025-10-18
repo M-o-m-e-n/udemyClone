@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { SignInDto, SignUpDto } from './dto/auth.dto';
+import { SignInDto, SignInInput, SignUpDto, SignUpInput } from './dto/auth.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -15,8 +15,9 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async signup(signUpDto: SignUpDto) {
-    const { email, password, role, firstName, lastName } = signUpDto;
+  async signup(dto: SignUpDto) {
+    const { email, password, role, firstName, lastName } = dto as SignUpInput;
+
     try {
       const hashedPassword = await argon.hash(password);
 
@@ -24,7 +25,7 @@ export class AuthService {
         data: {
           email,
           password: hashedPassword,
-          role,
+          role: (role as Role) ?? Role.STUDENT,
           firstName,
           lastName,
         },
@@ -57,8 +58,9 @@ export class AuthService {
     }
   }
 
-  async signIn(signInDto: SignInDto) {
-    const { email, password } = signInDto;
+  async signIn(dto: SignInDto) {
+    const { email, password } = dto as SignInInput;
+
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
