@@ -1,4 +1,13 @@
-import { PrismaClient, Role, CourseLevel, CourseStatus, LectureType, EnrollmentStatus, PaymentStatus, PaymentProvider } from '@prisma/client';
+import {
+  CourseLevel,
+  CourseStatus,
+  EnrollmentStatus,
+  LectureType,
+  PaymentProvider,
+  PaymentStatus,
+  PrismaClient,
+  Role,
+} from '@prisma/client';
 import * as argon from 'argon2';
 
 const prisma = new PrismaClient();
@@ -113,7 +122,9 @@ async function main() {
     ],
   });
 
-  const allStudents = await prisma.user.findMany({ where: { role: Role.STUDENT } });
+  const allStudents = await prisma.user.findMany({
+    where: { role: Role.STUDENT },
+  });
 
   console.log('✅ Users created!');
 
@@ -275,8 +286,10 @@ async function main() {
       title: 'Complete Node.js Developer Course',
       slug: 'complete-nodejs-developer-course',
       subtitle: 'Master Node.js by building real-world applications',
-      description: 'Learn Node.js from scratch and build professional backend applications. This comprehensive course covers everything from basics to advanced topics including Express.js, MongoDB, RESTful APIs, authentication, and deployment.',
-      thumbnail: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800',
+      description:
+        'Learn Node.js from scratch and build professional backend applications. This comprehensive course covers everything from basics to advanced topics including Express.js, MongoDB, RESTful APIs, authentication, and deployment.',
+      thumbnail:
+        'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800',
       promoVideo: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       price: 89.99,
       discountedPrice: 49.99,
@@ -285,7 +298,10 @@ async function main() {
       status: CourseStatus.PUBLISHED,
       instructorId: instructor1.id,
       categoryId: webDev.id,
-      prerequisites: ['Basic JavaScript knowledge', 'Understanding of HTML/CSS'],
+      prerequisites: [
+        'Basic JavaScript knowledge',
+        'Understanding of HTML/CSS',
+      ],
       learningOutcomes: [
         'Build RESTful APIs with Node.js and Express',
         'Work with MongoDB and Mongoose',
@@ -311,8 +327,10 @@ async function main() {
       title: 'Python for Data Science and Machine Learning',
       slug: 'python-data-science-machine-learning',
       subtitle: 'Complete hands-on course for data science with Python',
-      description: 'Learn Python for data science, machine learning, and data visualization. Master NumPy, Pandas, Matplotlib, Seaborn, Scikit-learn, and more.',
-      thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800',
+      description:
+        'Learn Python for data science, machine learning, and data visualization. Master NumPy, Pandas, Matplotlib, Seaborn, Scikit-learn, and more.',
+      thumbnail:
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800',
       promoVideo: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       price: 99.99,
       discountedPrice: 59.99,
@@ -347,8 +365,10 @@ async function main() {
       title: 'Complete UX/UI Design Masterclass',
       slug: 'complete-ux-ui-design-masterclass',
       subtitle: 'Learn user experience and interface design from scratch',
-      description: 'Master UX/UI design with Figma. Learn user research, wireframing, prototyping, and create beautiful user interfaces.',
-      thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800',
+      description:
+        'Master UX/UI design with Figma. Learn user research, wireframing, prototyping, and create beautiful user interfaces.',
+      thumbnail:
+        'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800',
       promoVideo: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       price: 79.99,
       discountedPrice: 39.99,
@@ -383,8 +403,10 @@ async function main() {
       title: 'React Native - The Complete Guide',
       slug: 'react-native-complete-guide',
       subtitle: 'Build native iOS and Android apps with React Native',
-      description: 'Learn React Native and build cross-platform mobile applications for iOS and Android.',
-      thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800',
+      description:
+        'Learn React Native and build cross-platform mobile applications for iOS and Android.',
+      thumbnail:
+        'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800',
       price: 94.99,
       level: CourseLevel.INTERMEDIATE,
       language: 'English',
@@ -505,7 +527,8 @@ async function main() {
         type: LectureType.ARTICLE,
         duration: 0,
         order: 4,
-        articleContent: '# Understanding Express Middleware\n\nMiddleware functions are functions that have access to the request object (req), the response object (res), and the next middleware function in the application\'s request- response cycle...',
+        articleContent:
+          "# Understanding Express Middleware\n\nMiddleware functions are functions that have access to the request object (req), the response object (res), and the next middleware function in the application's request- response cycle...",
       },
     ],
   });
@@ -822,7 +845,8 @@ async function main() {
       courseId: pythonCourse.id,
       rating: 5,
       title: 'Excellent course for beginners!',
-      comment: 'This course is absolutely fantastic! The instructor explains everything clearly and the projects are very practical. I went from knowing nothing about data science to building my own ML models.',
+      comment:
+        'This course is absolutely fantastic! The instructor explains everything clearly and the projects are very practical. I went from knowing nothing about data science to building my own ML models.',
       helpful: 12,
     },
     {
@@ -830,7 +854,8 @@ async function main() {
       courseId: nodeCourse.id,
       rating: 4,
       title: 'Great content, a bit fast-paced',
-      comment: 'Really good course overall. The projects are excellent and very relevant. Sometimes the pace is a bit fast but rewatching helps.',
+      comment:
+        'Really good course overall. The projects are excellent and very relevant. Sometimes the pace is a bit fast but rewatching helps.',
       helpful: 8,
     },
     {
@@ -838,7 +863,8 @@ async function main() {
       courseId: nodeCourse.id,
       rating: 5,
       title: 'Best Node.js course on the platform',
-      comment: 'I have taken several Node.js courses and this is by far the best one. John explains everything so well and the real-world projects are amazing.',
+      comment:
+        'I have taken several Node.js courses and this is by far the best one. John explains everything so well and the real-world projects are amazing.',
       helpful: 25,
     },
     {
@@ -846,7 +872,8 @@ async function main() {
       courseId: uxCourse.id,
       rating: 5,
       title: 'Perfect for career transition',
-      comment: 'I am a developer trying to learn design and this course was perfect. Mike makes everything easy to understand and the Figma projects are great.',
+      comment:
+        'I am a developer trying to learn design and this course was perfect. Mike makes everything easy to understand and the Figma projects are great.',
       helpful: 15,
     },
     {
@@ -854,7 +881,8 @@ async function main() {
       courseId: uxCourse.id,
       rating: 4,
       title: 'Very comprehensive',
-      comment: 'Covers everything you need to know about UX/UI design. Would love to see more advanced topics though.',
+      comment:
+        'Covers everything you need to know about UX/UI design. Would love to see more advanced topics though.',
       helpful: 6,
     },
     {
@@ -862,7 +890,8 @@ async function main() {
       courseId: pythonCourse.id,
       rating: 5,
       title: 'Amazing instructor!',
-      comment: 'Jane is an incredible teacher. Her explanations are crystal clear and the course structure is perfect. Highly recommended!',
+      comment:
+        'Jane is an incredible teacher. Her explanations are crystal clear and the course structure is perfect. Highly recommended!',
       helpful: 18,
     },
   ];
@@ -990,9 +1019,12 @@ async function main() {
   console.log('📊 Updating course statistics...');
 
   // Update Node.js course stats
-  const nodeEnrollmentCount = enrollments.filter(e => e.courseId === nodeCourse.id).length;
-  const nodeReviews = reviews.filter(r => r.courseId === nodeCourse.id);
-  const nodeAvgRating = nodeReviews.reduce((sum, r) => sum + r.rating, 0) / nodeReviews.length;
+  const nodeEnrollmentCount = enrollments.filter(
+    (e) => e.courseId === nodeCourse.id,
+  ).length;
+  const nodeReviews = reviews.filter((r) => r.courseId === nodeCourse.id);
+  const nodeAvgRating =
+    nodeReviews.reduce((sum, r) => sum + r.rating, 0) / nodeReviews.length;
 
   await prisma.course.update({
     where: { id: nodeCourse.id },
@@ -1004,9 +1036,12 @@ async function main() {
   });
 
   // Update Python course stats
-  const pythonEnrollmentCount = enrollments.filter(e => e.courseId === pythonCourse.id).length;
-  const pythonReviews = reviews.filter(r => r.courseId === pythonCourse.id);
-  const pythonAvgRating = pythonReviews.reduce((sum, r) => sum + r.rating, 0) / pythonReviews.length;
+  const pythonEnrollmentCount = enrollments.filter(
+    (e) => e.courseId === pythonCourse.id,
+  ).length;
+  const pythonReviews = reviews.filter((r) => r.courseId === pythonCourse.id);
+  const pythonAvgRating =
+    pythonReviews.reduce((sum, r) => sum + r.rating, 0) / pythonReviews.length;
 
   await prisma.course.update({
     where: { id: pythonCourse.id },
@@ -1018,9 +1053,12 @@ async function main() {
   });
 
   // Update UX course stats
-  const uxEnrollmentCount = enrollments.filter(e => e.courseId === uxCourse.id).length;
-  const uxReviews = reviews.filter(r => r.courseId === uxCourse.id);
-  const uxAvgRating = uxReviews.reduce((sum, r) => sum + r.rating, 0) / uxReviews.length;
+  const uxEnrollmentCount = enrollments.filter(
+    (e) => e.courseId === uxCourse.id,
+  ).length;
+  const uxReviews = reviews.filter((r) => r.courseId === uxCourse.id);
+  const uxAvgRating =
+    uxReviews.reduce((sum, r) => sum + r.rating, 0) / uxReviews.length;
 
   await prisma.course.update({
     where: { id: uxCourse.id },
@@ -1036,7 +1074,9 @@ async function main() {
   // ==================== SUMMARY ====================
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
-  console.log(`👥 Users created: ${1 + 3 + 5} (1 admin, 3 instructors, 5 students)`);
+  console.log(
+    `👥 Users created: ${1 + 3 + 5} (1 admin, 3 instructors, 5 students)`,
+  );
   console.log(`📂 Categories created: ${5} main + ${12} subcategories`);
   console.log(`📚 Courses created: ${4} (3 published, 1 draft)`);
   console.log(`📖 Sections created: ${8}`);

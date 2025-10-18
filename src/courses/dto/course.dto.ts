@@ -28,7 +28,12 @@ export const createCourseSchema = z.object({
   targetAudience: z.array(z.string()).optional(),
 });
 
-export const updateCourseSchema = createCourseSchema.partial();
+export const updateCourseSchema = createCourseSchema
+  .partial()
+  .merge(z.object({ status: CourseStatusEnum.optional() })) // allow status in update
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update',
+  });
 
 export const publishCourseSchema = z.object({
   status: CourseStatusEnum,

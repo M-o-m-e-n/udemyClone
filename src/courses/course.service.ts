@@ -17,7 +17,7 @@ import { CourseStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   // ==================== COURSE CRUD ====================
 
