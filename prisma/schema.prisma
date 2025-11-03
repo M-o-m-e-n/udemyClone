@@ -72,6 +72,7 @@ enum CourseLevel {
 
 enum CourseStatus {
   DRAFT
+  UNDER_REVIEW
   PUBLISHED
   ARCHIVED
 }
@@ -79,7 +80,7 @@ enum CourseStatus {
 model Course {
   id               String       @id @default(uuid())
   title            String
-  slug             String       @unique  // for SEO-friendly URLs
+  slug             String       @unique // for SEO-friendly URLs
   subtitle         String?
   description      String
   thumbnail        String?
@@ -160,24 +161,34 @@ enum LectureType {
   RESOURCE
 }
 
-model Lecture {
-  id             String      @id @default(uuid())
-  sectionId      String
-  title          String
-  description    String?
-  type           LectureType @default(VIDEO)
-  duration       Int         @default(0) // in seconds
-  order          Int
-  isFree         Boolean     @default(false) // preview lecture
-  videoUrl       String?
-  hlsUrl         String? // HLS streaming URL
-  articleContent String?     @db.Text
-  resourceUrl    String? // downloadable resources
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
 
-  section  Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  progress Progress[]
+model Lecture {
+  id               String           @id @default(uuid())
+  sectionId        String
+  title            String
+  description      String?
+  type             LectureType      @default(VIDEO)
+  duration         Int              @default(0) // in seconds
+  order            Int
+  isFree           Boolean          @default(false) // preview lecture
+  videoUrl         String?
+  hlsUrl           String? // HLS streaming URL
+  thumbnail        String? // video thumbnail
+  articleContent   String?          @db.Text
+  resourceUrl      String? // downloadable resources
+  processingStatus ProcessingStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  section   Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress  Progress[]
+  resources Resource[]
 
   @@index([sectionId])
   @@index([order])
@@ -304,4 +315,62 @@ model Certificate {
   @@unique([userId, courseId])
   @@index([verificationCode])
   @@map("certificates")
+}
+
+model Resource {
+  id        String       @id @default(uuid())
+  name      String
+  url       String
+  type      ResourceType
+  size      Int // in bytes
+  lectureId String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  @@index([lectureId])
+  @@map("resources")
+}
+
+enum ResourceType {
+  PDF
+  ZIP
+  DOC
+  DOCX
+  PPT
+  PPTX
+  XLS
+  XLSX
+  TXT
+  OTHER
+}
+
+model UploadSession {
+  id             String       @id @default(uuid())
+  userId         String
+  fileName       String
+  fileSize       Int // in bytes
+  mimeType       String
+  totalChunks    Int
+  uploadedChunks Int          @default(0)
+  status         UploadStatus @default(PENDING)
+  chunkHashes    String[] // array of chunk hashes for verification
+  metadata       Json?        @db.JsonB // additional metadata
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("upload_sessions")
+}
+
+enum UploadStatus {
+  PENDING
+  UPLOADING
+  COMPLETED
+  FAILED
+  EXPIRED
 }
