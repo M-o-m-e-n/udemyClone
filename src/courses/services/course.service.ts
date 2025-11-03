@@ -4,15 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateCourseDto,
   GetCourseQueryDto,
   PublishCourseDto,
   UpdateCourseDto,
-} from './dto/course.dto';
-import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
-import { CreateLectureDto, UpdateLectureDto } from './dto/lecture.dto';
+} from '../dto/course.dto';
+import { CreateSectionDto, UpdateSectionDto } from '../dto/section.dto';
+import { CreateLectureDto, UpdateLectureDto } from '../dto/lecture.dto';
 import { CourseStatus, Role } from '@prisma/client';
 
 @Injectable()
@@ -371,13 +371,12 @@ export class CourseService {
 
     // Validate course is ready for publishing
     if (dto.status === CourseStatus.PUBLISHED) {
-      if (!course.sections || course.sections.length === 0) {
-        throw new BadRequestException('Course must have at least one section');
-      }
-
-      const hasLectures = course.sections.some((s) => s.lectures.length > 0);
-      if (!hasLectures) {
-        throw new BadRequestException('Course must have at least one lecture');
+      const validationErrors = await this.validateCourseForPublishing(course);
+      if (validationErrors.length > 0) {
+        throw new BadRequestException({
+          message: 'Course is not ready for publishing',
+          errors: validationErrors,
+        });
       }
     }
 
@@ -597,6 +596,153 @@ export class CourseService {
       articleContent: lecture.articleContent,
       resourceUrl: lecture.resourceUrl,
     };
+  }
+
+  // ==================== REORDERING METHODS ====================
+
+  async reorderSections(
+    courseId: string,
+    userId: string,
+    sectionIds: string[],
+  ) {
+    await this.verifyInstructorAccess(courseId, userId);
+
+    // Validate that all sections belong to the course
+    const sections = await this.prisma.section.findMany({
+      where: {
+        id: { in: sectionIds },
+        courseId,
+      },
+    });
+
+    if (sections.length !== sectionIds.length) {
+      throw new BadRequestException(
+        'Some sections do not belong to this course',
+      );
+    }
+
+    // Update section orders in a transaction
+    await this.prisma.$transaction(
+      sectionIds.map((sectionId, index) =>
+        this.prisma.section.update({
+          where: { id: sectionId },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
+
+    return { message: 'Sections reordered successfully' };
+  }
+
+  async reorderLectures(
+    sectionId: string,
+    userId: string,
+    lectureIds: string[],
+  ) {
+    const section = await this.prisma.section.findUnique({
+      where: { id: sectionId },
+      include: { course: true },
+    });
+
+    if (!section) {
+      throw new NotFoundException('Section not found');
+    }
+
+    await this.verifyInstructorAccess(section.courseId, userId);
+
+    // Validate that all lectures belong to the section
+    const lectures = await this.prisma.lecture.findMany({
+      where: {
+        id: { in: lectureIds },
+        sectionId,
+      },
+    });
+
+    if (lectures.length !== lectureIds.length) {
+      throw new BadRequestException(
+        'Some lectures do not belong to this section',
+      );
+    }
+
+    // Update lecture orders in a transaction
+    await this.prisma.$transaction(
+      lectureIds.map((lectureId, index) =>
+        this.prisma.lecture.update({
+          where: { id: lectureId },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
+
+    return { message: 'Lectures reordered successfully' };
+  }
+
+  private async validateCourseForPublishing(course: any): Promise<string[]> {
+    const errors: string[] = [];
+
+    // Basic course information validation
+    if (!course.title || course.title.length < 10) {
+      errors.push('Course title must be at least 10 characters');
+    }
+
+    if (!course.description || course.description.length < 200) {
+      errors.push('Course description must be at least 200 characters');
+    }
+
+    if (!course.thumbnail) {
+      errors.push('Course must have a thumbnail image');
+    }
+
+    if (!course.learningOutcomes || course.learningOutcomes.length < 4) {
+      errors.push('Course must have at least 4 learning outcomes');
+    }
+
+    // Section and lecture validation
+    if (!course.sections || course.sections.length === 0) {
+      errors.push('Course must have at least one section');
+    } else {
+      const totalLectures = course.sections.reduce(
+        (sum: number, section: any) => sum + section.lectures.length,
+        0,
+      );
+
+      if (totalLectures < 5) {
+        errors.push('Course must have at least 5 lectures');
+      }
+
+      // Check if total duration is at least 30 minutes
+      const totalDuration = course.sections.reduce(
+        (sum: number, section: any) =>
+          sum +
+          section.lectures.reduce(
+            (lectureSum: number, lecture: any) => lectureSum + lecture.duration,
+            0,
+          ),
+        0,
+      );
+
+      if (totalDuration < 1800) {
+        // 30 minutes in seconds
+        errors.push('Course must have at least 30 minutes of content');
+      }
+
+      // Check if any lectures are still processing
+      const processingLectures = course.sections.some((section: any) =>
+        section.lectures.some(
+          (lecture: any) =>
+            lecture.processingStatus === 'PROCESSING' ||
+            lecture.processingStatus === 'PENDING',
+        ),
+      );
+
+      if (processingLectures) {
+        errors.push(
+          'All video lectures must be fully processed before publishing',
+        );
+      }
+    }
+
+    return errors;
   }
 
   // ==================== HELPER METHODS ====================

@@ -6,26 +6,28 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { CourseService } from './course.service';
+import { CourseService } from '../services/course.service';
 import {
   CreateCourseDto,
   GetCourseQueryDto,
   PublishCourseDto,
+  ReorderLecturesDto,
+  ReorderSectionsDto,
   UpdateCourseDto,
-} from './dto/course.dto';
-import { CreateSectionDto, UpdateSectionDto } from './dto/section.dto';
-import { CreateLectureDto, UpdateLectureDto } from './dto/lecture.dto';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+} from '../dto/course.dto';
+import { CreateSectionDto, UpdateSectionDto } from '../dto/section.dto';
+import { CreateLectureDto, UpdateLectureDto } from '../dto/lecture.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { GetCurrentUserId } from '../auth/common/decorators/get-current-user-id.decorator';
-import { GetCurrentUser } from '../auth/common/decorators/get-current-user.decorator';
-import { Public } from '../auth/common/decorators/public.decorator';
+import { GetCurrentUserId } from '../../auth/common/decorators/get-current-user-id.decorator';
+import { GetCurrentUser } from '../../auth/common/decorators/get-current-user.decorator';
+import { Public } from '../../auth/common/decorators/public.decorator';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 @Controller('courses')
@@ -69,7 +71,7 @@ export class CourseController {
 
   @UseGuards(RolesGuard)
   @Roles(Role.INSTRUCTOR, Role.ADMIN)
-  @Put(':id')
+  @Patch(':id')
   async updateCourse(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
@@ -93,7 +95,7 @@ export class CourseController {
 
   @UseGuards(RolesGuard)
   @Roles(Role.INSTRUCTOR, Role.ADMIN)
-  @Put(':id/publish')
+  @Patch(':id/publish')
   async publishCourse(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
@@ -117,7 +119,7 @@ export class CourseController {
     return this.courseService.createSection(courseId, userId, dto);
   }
 
-  @Put('sections/:sectionId')
+  @Patch('sections/:sectionId')
   @UseGuards(RolesGuard)
   @Roles(Role.INSTRUCTOR)
   async updateSection(
@@ -153,7 +155,7 @@ export class CourseController {
     return this.courseService.createLecture(sectionId, userId, dto);
   }
 
-  @Put('lectures/:lectureId')
+  @Patch('lectures/:lectureId')
   @UseGuards(RolesGuard)
   @Roles(Role.INSTRUCTOR)
   async updateLecture(
@@ -181,5 +183,33 @@ export class CourseController {
     @GetCurrentUserId() userId: string,
   ) {
     return this.courseService.getLecturePlayback(lectureId, userId);
+  }
+
+  // ==================== REORDERING ENDPOINTS ====================
+
+  @Patch(':courseId/sections/reorder')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTRUCTOR)
+  async reorderSections(
+    @Param('courseId') courseId: string,
+    @GetCurrentUserId() userId: string,
+    @Body(ZodValidationPipe) dto: ReorderSectionsDto,
+  ) {
+    return this.courseService.reorderSections(courseId, userId, dto.sectionIds);
+  }
+
+  @Patch('sections/:sectionId/lectures/reorder')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTRUCTOR)
+  async reorderLectures(
+    @Param('sectionId') sectionId: string,
+    @GetCurrentUserId() userId: string,
+    @Body(ZodValidationPipe) dto: ReorderLecturesDto,
+  ) {
+    return this.courseService.reorderLectures(
+      sectionId,
+      userId,
+      dto.lectureIds,
+    );
   }
 }
